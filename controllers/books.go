@@ -19,7 +19,7 @@ type UpdateBookInput struct {
 
 // GET /books
 // Find all books
-func FindBooks(c *gin.Context) {
+func FindBooks(c *gin.Context) { //take the gin context... revise this
 	var books []models.Book
 	models.DB.Find(&books)
 
