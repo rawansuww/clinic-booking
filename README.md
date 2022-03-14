@@ -1,9 +1,9 @@
-# Bookstore REST API using Gin and Gorm
+# Clinic Booking System REST API using Gin and Gorm
 
-Read the [article](https://blog.logrocket.com/how-to-build-a-rest-api-with-golang-using-gin-and-gorm/).
+This is the code submission for Assessment #1 at CX.
 
 How to use:
 
 ```
-$ go run main.go
+$ go run .
 ```
