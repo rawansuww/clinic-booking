@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/rahmanfadhil/gin-bookstore/models"
+	"github.com/rawansuww/clinic-booking/models"
 	//"gorm.io/driver/mysql"
 )
 

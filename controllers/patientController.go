@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rahmanfadhil/gin-bookstore/models"
+	"github.com/rawansuww/clinic-booking/models"
 )
 
 type CreatePatientInput struct {
@@ -117,13 +117,13 @@ func UpdatePatient(c *gin.Context) {
 // DELETE /patients/:id
 // Delete a patient
 func DeletePatient(c *gin.Context) {
-	var doc models.Patient
-	if err := models.DB.Where("id = ?", c.Param("id")).First(&doc).Error; err != nil {
+	var patient models.Patient
+	if err := models.DB.Where("id = ?", c.Param("id")).First(&patient).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
 		return
 	}
 
-	models.DB.Delete(&doc)
+	models.DB.Delete(&patient)
 
 	c.JSON(http.StatusOK, gin.H{"data": true})
 }

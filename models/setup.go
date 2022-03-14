@@ -4,9 +4,6 @@ import (
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
-
-	//"github.com/jinzhu/gorm"
-	//_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -27,7 +24,5 @@ func ConnectDatabase() {
 	}
 
 	database.AutoMigrate(&Doctor{}, &Appointment{}, &Patient{}, &Admin{})
-	//database.CreateTable(&Doctor{}, &Appointment{})
-	//database.Model(&game).Related(&gameImages)
 	DB = database
 }
