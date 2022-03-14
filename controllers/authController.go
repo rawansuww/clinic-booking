@@ -11,9 +11,9 @@ import (
 	"gorm.io/gorm"
 	_ "gorm.io/gorm"
 
-	//"github.com/rahmanfadhil/gin-bookstore/auth"
-	"github.com/rahmanfadhil/gin-bookstore/middleware"
-	"github.com/rahmanfadhil/gin-bookstore/models"
+	//"github.com/rawansuww/clinic-booking/auth"
+	"github.com/rawansuww/clinic-booking/middleware"
+	"github.com/rawansuww/clinic-booking/models"
 )
 
 // Signup creates a user in db
