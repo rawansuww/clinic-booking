@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -9,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/rawansuww/clinic-booking/models"
-	//"gorm.io/driver/mysql"
 )
 
 type BookSlot struct {
@@ -34,9 +32,9 @@ func CreateAppointment(c *gin.Context) {
 	doc.ID = uint(doctorID)
 
 	email := c.GetString("email")
-	fmt.Println("print email", email)
+
 	if err := models.DB.Where("email = ?", email).First(&patient).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "You are authorized, but you need to be logged in as a patient book an appointment!"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You need to be logged in as a patient book an appointment!"})
 		return
 	}
 
@@ -53,8 +51,7 @@ func CreateAppointment(c *gin.Context) {
 	attempt := input.StartTime
 	attempt2 := input.EndTime
 	now := time.Now()
-	fmt.Println(attempt)
-	fmt.Println(now)
+
 	if attempt.Before(now) { //1. check if appointment not in past
 		c.JSON(http.StatusBadRequest, gin.H{"error": "You cannot book an appointment in the past!"})
 		return
@@ -67,11 +64,11 @@ func CreateAppointment(c *gin.Context) {
 	}
 
 	//3. to check for 12 patients [for a given date for a given doctor]
-	fmt.Println("This is the input start time that was sent", attempt)
+
 	t := attempt.Format("2006-01-02")
-	fmt.Println("This is formatted sent start time", t)
+
 	models.DB.Raw("SELECT COUNT(*) FROM appointments WHERE DATE(start_time) = ? AND d_id=?", string(t), doc.ID).Scan(&count)
-	fmt.Println("Number of patients for this doc for this day is", count)
+
 	if count >= 12 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "The doctor already has 12 patients for this day! Please choose another day."})
 		return
@@ -79,7 +76,7 @@ func CreateAppointment(c *gin.Context) {
 
 	//3. to check for 8 hours total [for a given date for a given doctor]
 	models.DB.Raw("SELECT SUM((TIMEDIFF(end_time, start_time)/10000)) FROM appointments WHERE DATE(start_time) = ? AND d_id=?", string(t), doc.ID).Scan(&totTime)
-	fmt.Println("TOTAL HOURS for this doc on this day is", totTime)
+
 	if totTime >= 8 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "This doctor already has 8 HOURS for this day! Please choose another day."})
 		return
@@ -95,10 +92,6 @@ func CreateAppointment(c *gin.Context) {
 	day5PM := time.Date(year1, month1, day1, 17, 0, 0, 0, time.UTC)
 
 	if attempt.Before(day9AM) || attempt2.After(day5PM) {
-		fmt.Println(day9AM)
-		fmt.Println(day5PM)
-		fmt.Println(attempt)
-		fmt.Println(day1, month1, year1)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Doctors only work from 9 AM to 5 PM!"})
 		return
 	}
@@ -107,7 +100,6 @@ func CreateAppointment(c *gin.Context) {
 	dup1 := attempt.Format("2006-01-02T15:04:05Z07:00")
 	dup2 := attempt2.Format("2006-01-02T15:04:05Z07:00")
 	models.DB.Raw("SELECT EXISTS (SELECT * FROM appointments WHERE d_id=? AND start_time BETWEEN ? AND ? OR end_time BETWEEN ? and ?)", doc.ID, string(dup1), string(dup2), string(dup1), string(dup2)).Scan(&overlap)
-	fmt.Println("CASE OF FINDING OVERLAP?", overlap)
 	if overlap {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Your appointment time overlaps with another appointment!"})
 		return

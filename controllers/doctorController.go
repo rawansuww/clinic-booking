@@ -1,9 +1,6 @@
 package controllers
 
 import (
-	//"encoding/json"
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -56,18 +53,34 @@ type D struct {
 // Find all doctors
 func FindDoctors(c *gin.Context) {
 	var docs []models.Doctor
-	var patient models.Patient
+	role := c.GetString("role")
+	if role == "patient" || role == "doctor" {
+		models.DB.Raw("SELECT name, email FROM doctors").Find(&docs)
+	} else {
+		models.DB.Raw("SELECT * FROM doctors").Find(&docs)
+	}
+	c.JSON(http.StatusOK, gin.H{"doctors": docs})
+}
 
-	email := c.GetString("email")
+// GET /doctors/:id
+// Find a doctor
+func FindDoctor(c *gin.Context) {
+	var doc models.Doctor
+	role := c.GetString("role")
 
-	if err := models.DB.Where("email = ?", email).First(&patient).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "You need to be either a doctor or clinic admin to access this!"})
-		return
+	if role == "patient" || role == "doctor" {
+		if err := models.DB.Raw("SELECT name, email FROM doctors WHERE id=?", c.Param("id")).First(&doc).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
+			return
+		}
+	} else {
+		if err := models.DB.Raw("SELECT * FROM doctors WHERE id=?", c.Param("id")).First(&doc).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
+			return
+		}
 	}
 
-	models.DB.Model(&models.Doctor{}).Preload("Schedule").Find(&docs)
-
-	c.JSON(http.StatusOK, gin.H{"doctors": docs})
+	c.JSON(http.StatusOK, gin.H{"doctor": doc})
 }
 
 // most appointments for a given day.. only accessible to admins
@@ -90,7 +103,6 @@ func FindDoctorsMost(c *gin.Context) {
 	}
 
 	dup1 := input.GivenDay.Format("2006-01-02")
-	fmt.Println(dup1)
 	rows, err := models.DB.Raw("Select d_id, count(*) From appointments WHERE DATE(start_time) = ? AND deleted_at IS NULL Group By d_id order by count(*) desc", string(dup1)).Rows()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "time to cry"})
@@ -133,7 +145,7 @@ func FindDoctorsLongest(c *gin.Context) {
 		return
 	}
 
-	dup1 := input.GivenDay.Format("2006-01-02") //getting zero error.. fix input later!
+	dup1 := input.GivenDay.Format("2006-01-02")
 	rows, err := models.DB.Raw("Select d_id, SUM((TIMEDIFF(end_time, start_time)/10000)) From appointments WHERE DATE(start_time) = ? Group By d_id HAVING SUM((TIMEDIFF(end_time, start_time)/10000))>6 order by SUM((TIMEDIFF(end_time, start_time)/10000)) desc", string(dup1)).Rows()
 
 	if err != nil {
@@ -146,8 +158,6 @@ func FindDoctorsLongest(c *gin.Context) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println("----")
-		fmt.Println(dID, freq)
 
 		if err := models.DB.Where("id = ?", dID).Find(&doc).Error; err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Doctor not found!"})
@@ -167,21 +177,6 @@ func FindDoctorsLongest(c *gin.Context) {
 	}
 }
 
-// GET /doctors/:id
-// Find a doctor
-func FindDoctor(c *gin.Context) {
-
-	var doc models.Doctor
-	if err := models.DB.Where("id = ?", c.Param("id")).First(&doc).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
-		return
-	}
-
-	models.DB.Preload("Schedule").Find(&doc)
-
-	c.JSON(http.StatusOK, gin.H{"doctor": doc})
-}
-
 //list of appointmnes
 func FindDoctorSchedule(c *gin.Context) {
 	var schedule []DoctorSchedule
@@ -196,12 +191,9 @@ func FindDoctorSchedule(c *gin.Context) {
 	}
 
 	models.DB.Preload("Schedule").Find(&doc)
-
 	if role != "patient" {
 		for i := 0; i < len(doc.Schedule); i++ {
-
 			models.DB.Raw("SELECT name, email FROM patients WHERE id=?", doc.Schedule[i].PID).First(&patient)
-
 			schd := DoctorSchedule{doc.Schedule[i], patient}
 			schedule = append(schedule, schd)
 		}
@@ -239,20 +231,15 @@ func FindDoctorAvailAll(c *gin.Context) {
 
 	for j := 0; j < len(docs); j++ {
 		models.DB.Raw("SELECT * FROM appointments WHERE appointments.d_id=? AND DATE(appointments.start_time)=? AND appointments.deleted_at IS NULL order by start_time asc", docs[j].ID, string(input.GivenDay.Format("2006-01-02"))).Find(&givenSched)
-
 		if len(givenSched) == 0 { //if i have NO appointments, the doc is available from 9 to 5
-			fmt.Println("givensched is zero")
 			docs[j].Availability = nil
 			docs[j].Availability = append(docs[j].Availability, string(dayStart.String()+"---"+dayEnd.String()))
 		} else if len(givenSched) == 1 {
-			fmt.Println("givensched is one")
 			if !dayStart.After(givenSched[0].StartTime) {
-				fmt.Println("givensched entered at [0]")
 				docs[j].Availability = append(docs[j].Availability, string(dayStart.String()+"---"+(givenSched[0]).StartTime.String()))
 				docs[j].Availability = append(docs[j].Availability, (givenSched[0]).EndTime.String()+"---"+string(dayEnd.String()))
 			}
 		} else if len(givenSched) > 1 {
-			fmt.Println("givensched is greater than 1")
 			for i := 0; i < len(givenSched); i++ {
 				t := (givenSched[i]).StartTime
 				t1 := (givenSched[i]).EndTime //end time of one appointment
@@ -296,16 +283,6 @@ func FindDoctorAvailability(c *gin.Context) { //ISSUE!!!! input date is showing 
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	// Calling UnmarshalJSON method with its parameters
-
-	t := input.GivenDay.String()
-	bb := []byte(t)
-	var data Given
-	if err := json.Unmarshal(bb, &data.GivenDay); err != nil {
-		fmt.Println("Could not unmarshal data:", err)
-	}
-
 	models.DB.Preload("Schedule").Find(&doc)
 	year, month, day := input.GivenDay.Date()
 
@@ -315,18 +292,14 @@ func FindDoctorAvailability(c *gin.Context) { //ISSUE!!!! input date is showing 
 	models.DB.Raw("SELECT * FROM appointments WHERE appointments.d_id=? AND DATE(appointments.start_time)=? AND appointments.deleted_at IS NULL order by start_time asc", c.Param("id"), string(input.GivenDay.Format("2006-01-02"))).Find(&givenSched)
 
 	if len(givenSched) == 0 { //if i have NO appointments, the doc is available from 9 to 5
-		fmt.Println("givensched is zero")
 		doc.Availability = nil
 		doc.Availability = append(doc.Availability, string(dayStart.String()+"---"+dayEnd.String()))
 	} else if len(givenSched) == 1 {
-		fmt.Println("givensched is one")
 		if !dayStart.After(givenSched[0].StartTime) {
-			fmt.Println("givensched entered at [0]")
 			doc.Availability = append(doc.Availability, string(dayStart.String()+"---"+(givenSched[0]).StartTime.String()))
 			doc.Availability = append(doc.Availability, (givenSched[0]).EndTime.String()+"---"+string(dayEnd.String()))
 		}
 	} else if len(givenSched) > 1 {
-		fmt.Println("givensched is greater than 1")
 		for i := 0; i < len(givenSched); i++ {
 			t := (givenSched[i]).StartTime
 			t1 := (givenSched[i]).EndTime //end time of one appointment
@@ -375,13 +348,19 @@ func UpdateDoctor(c *gin.Context) {
 // DELETE /doctors/:id
 // Delete a doctor
 func DeleteDoctor(c *gin.Context) {
-	var doc models.Doctor
-	if err := models.DB.Where("id = ?", c.Param("id")).First(&doc).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
-		return
+	role := c.GetString("role")
+
+	if role == "admin" {
+		var doc models.Doctor
+		if err := models.DB.Where("id = ?", c.Param("id")).First(&doc).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
+			return
+		}
+
+		models.DB.Delete(&doc)
+
+		c.JSON(http.StatusOK, gin.H{"data": true})
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You must be admin to delete doctors"})
 	}
-
-	models.DB.Delete(&doc)
-
-	c.JSON(http.StatusOK, gin.H{"data": true})
 }

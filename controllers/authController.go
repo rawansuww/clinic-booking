@@ -49,8 +49,7 @@ func Signup(c *gin.Context) {
 			return
 		}
 
-		err2 := models.DB.Create(&doc)
-		if err2 != nil {
+		if models.DB.Create(&doc).Error != nil {
 			c.JSON(400, "Your email already exists in this system!")
 			return
 		}
