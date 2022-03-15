@@ -179,6 +179,7 @@ func FindDoctor(c *gin.Context) {
 func FindDoctorSchedule(c *gin.Context) {
 	var schedule []DoctorSchedule
 	var doc models.Doctor
+
 	var patient models.Patient
 	role := c.GetString("role")
 
@@ -189,18 +190,21 @@ func FindDoctorSchedule(c *gin.Context) {
 
 	models.DB.Preload("Schedule").Find(&doc)
 
-	for i := 0; i < len(doc.Schedule); i++ {
-		if role == "patient" {
-			models.DB.Raw("SELECT name, email FROM patients WHERE id=?", doc.Schedule[i].PID).Find(&patient)
-		} else {
-			models.DB.Raw("SELECT * FROM patients WHERE id=?", doc.Schedule[i].PID).First(&patient)
-		}
+	if role != "patient" {
+		for i := 0; i < len(doc.Schedule); i++ {
 
-		schd := DoctorSchedule{doc.Schedule[i], patient}
-		schedule = append(schedule, schd)
+			models.DB.Raw("SELECT name, email FROM patients WHERE id=?", doc.Schedule[i].PID).First(&patient)
+
+			schd := DoctorSchedule{doc.Schedule[i], patient}
+			schedule = append(schedule, schd)
+		}
+		c.JSON(http.StatusOK, gin.H{"schedule": schedule})
+		return
+	} else {
+		c.JSON(http.StatusOK, gin.H{"schedule": doc.Schedule})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"schedule": schedule})
 }
 
 //find availabitlies of ALLLL doctors
@@ -211,7 +215,7 @@ func FindDoctorAvailAll(c *gin.Context) {
 
 	role := c.GetString("role")
 
-	if role != "admin" || role != "patient" {
+	if role != "admin" && role != "patient" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Only clinic admins and patients are authorized to see ALL doctors' availabilities!"})
 		return
 	}
@@ -286,9 +290,11 @@ func FindDoctorAvailAll(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"availability": result})
 }
 
-//
-func FindDoctorAvailability(c *gin.Context) {
+//POST to give it a date!
+func FindDoctorAvailability(c *gin.Context) { //ISSUE!!!! input date is showing 0001-01-01
 	var doc models.Doctor
+	var input Given
+	var givenSched []models.Appointment
 	if err := models.DB.Where("id = ?", c.Param("id")).First(&doc).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
 		return
@@ -296,39 +302,41 @@ func FindDoctorAvailability(c *gin.Context) {
 
 	models.DB.Preload("Schedule").Find(&doc)
 
-	dayStart := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 9, 0, 0, 0, time.UTC)
-	dayEnd := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 17, 0, 0, 0, time.UTC)
+	year, month, day := input.GivenDay.Date()
+	fmt.Println(year, month, day)
 
-	for i := 0; i < len(doc.Schedule); i++ {
-		if i == 0 { //first appointment of the day!
+	dayStart := time.Date(year, month, day, 9, 0, 0, 0, time.UTC)
+	dayEnd := time.Date(year, month, day, 17, 0, 0, 0, time.UTC)
 
-			if !dayStart.After(doc.Schedule[i].StartTime) {
-				doc.Availability = append(doc.Availability, string(dayStart.String()+"---"+(doc.Schedule[i]).StartTime.String()))
-			}
+	models.DB.Raw("SELECT * FROM nice.appointments WHERE appointments.d_id=? AND DATE(appointments.start_time)=? AND appointments.deleted_at IS NULL order by start_time asc", c.Param("id"), string("")).Find(&givenSched)
+
+	if len(givenSched) == 0 { //if i have NO appointments, the doc is available from 9 to 5
+		fmt.Println("givensched is zero")
+		doc.Availability = nil
+		doc.Availability = append(doc.Availability, string(dayStart.String()+"---"+dayEnd.String()))
+	} else if len(givenSched) == 1 {
+		fmt.Println("givensched is one")
+		if !dayStart.After(givenSched[0].StartTime) {
+			fmt.Println("givensched entered at [0]")
+			doc.Availability = append(doc.Availability, string(dayStart.String()+"---"+(givenSched[0]).StartTime.String()))
+			doc.Availability = append(doc.Availability, (givenSched[0]).EndTime.String()+"---"+string(dayEnd.String()))
 		}
+	} else if len(givenSched) > 1 {
+		fmt.Println("givensched is greater than 1")
+		for i := 0; i < len(givenSched); i++ {
+			t := (givenSched[i]).StartTime
+			t1 := (givenSched[i]).EndTime //end time of one appointment
 
-		if i+1 == len(doc.Schedule) { //last appointment of the day
-			if !dayStart.Before(doc.Schedule[i].EndTime) {
-				fmt.Println("neee")
-				doc.Availability = append(doc.Availability, string((doc.Schedule[i]).EndTime.String()+"---"+dayEnd.String()))
-			}
-
-		}
-
-		if len(doc.Schedule) > 1 { //if i have two appointments or more, so that i dont go out of bounds!
-			if i == len(doc.Schedule)-1 {
-				//handle final element here...
+			if i == len(givenSched)-1 { //handle final element here...
+				doc.Availability = append(doc.Availability, string(t1.String()+"---"+string(dayEnd.String())))
 				break
 			}
-			t1 := (doc.Schedule[i]).EndTime     //end time of one appointment
-			t2 := (doc.Schedule[i+1]).StartTime //start time of next appointment
 
-			if dayStart.After(t1) || dayStart.Before(t1) || dayEnd.Before(t2) || dayEnd.After(t2) {
-				doc.Availability = nil
-				fmt.Println("yea?")
-				doc.Availability = append(doc.Availability, string(dayStart.String()+"---"+dayEnd.String()))
+			t2 := (givenSched[i+1]).StartTime //start time of next appointment
+			if i == 0 {
+				doc.Availability = append(doc.Availability, string(dayStart.String()+"---"+t.String()))
+				doc.Availability = append(doc.Availability, string(t1.String()+"---"+t2.String()))
 			} else {
-				fmt.Println("nooo")
 				doc.Availability = append(doc.Availability, string(t1.String()+"---"+t2.String()))
 			}
 
@@ -336,14 +344,7 @@ func FindDoctorAvailability(c *gin.Context) {
 
 	}
 
-	if len(doc.Schedule) == 0 { //if i have NO appointments, the doc is available from 9 to 5
-		//empty availability array in case of cancelled appointments...
-		doc.Availability = nil
-		doc.Availability = append(doc.Availability, string(dayStart.String()+"---"+dayEnd.String()))
-	}
-
 	models.DB.Model(&doc).Select("availability").Updates(doc.Availability)
-
 	c.JSON(http.StatusOK, gin.H{"availability": doc.Availability})
 }
 

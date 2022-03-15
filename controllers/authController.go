@@ -28,7 +28,7 @@ func Signup(c *gin.Context) {
 		fmt.Println(err)
 
 		c.JSON(400, gin.H{
-			"msg": "invalid json",
+			"msg": "Invalid JSON or missing field!",
 		})
 		c.Abort()
 

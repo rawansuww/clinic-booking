@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/rahmanfadhil/gin-bookstore/controllers"
-	"github.com/rahmanfadhil/gin-bookstore/middleware"
-	"github.com/rahmanfadhil/gin-bookstore/models"
+	"github.com/rawansuww/clinic-booking/controllers"
+	"github.com/rawansuww/clinic-booking/middleware"
+	"github.com/rawansuww/clinic-booking/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,7 +22,7 @@ func main() {
 	registered.GET("/doctors", controllers.FindDoctors)
 	registered.GET("/doctors/:id", controllers.FindDoctor)
 	registered.GET("/doctors/:id/schedule", controllers.FindDoctorSchedule)
-	registered.GET("/doctors/:id/slots", controllers.FindDoctorAvailability)
+	registered.POST("/doctors/:id/slots", controllers.FindDoctorAvailability) //takes input date
 	registered.PATCH("/doctors/:id", controllers.UpdateDoctor)
 	registered.DELETE("/doctors/:id", controllers.DeleteDoctor)
 	registered.POST("/doctors/most/count", controllers.FindDoctorsMost)

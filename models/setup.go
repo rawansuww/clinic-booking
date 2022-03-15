@@ -23,6 +23,8 @@ func ConnectDatabase() {
 		panic("Failed to connect to database!")
 	}
 
-	database.AutoMigrate(&Doctor{}, &Appointment{}, &Patient{}, &Admin{})
+	database.AutoMigrate(&Doctor{}, &Appointment{})
+	database.AutoMigrate(&Patient{}, &Appointment{})
+	database.AutoMigrate(&Admin{})
 	DB = database
 }

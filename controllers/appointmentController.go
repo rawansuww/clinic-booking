@@ -13,9 +13,9 @@ import (
 )
 
 type BookSlot struct {
-	AID       uint          `json:"aID" ` //autoincrement later
-	PID       string        `json:"pID"`  //you will get the pID from JWT TOKEN later
-	DID       uint          `json:"dID"`  //you will get the dID from URL param
+	//AID       uint          `json:"aID" ` //autoincrement later
+	PID       string        `json:"pID"` //you will get the pID from JWT TOKEN later
+	DID       uint          `json:"dID"` //you will get the dID from URL param
 	Booked    bool          `json:"booked"`
 	StartTime time.Time     `json:"startTime" binding:"required"`
 	EndTime   time.Time     `json:"endTime" binding:"required"`
@@ -94,6 +94,22 @@ func CreateAppointment(c *gin.Context) {
 
 	models.DB.Preload("Schedule").Find(&app)
 
+	//5. CHECK that given booking is after 9 AM and before 5 PM of that date
+
+	year1, month1, day1 := attempt.Date()
+
+	day9AM := time.Date(year1, month1, day1, 9, 0, 0, 0, time.UTC)
+	day5PM := time.Date(year1, month1, day1, 17, 0, 0, 0, time.UTC)
+
+	if attempt.Before(day9AM) || attempt2.After(day5PM) {
+		fmt.Println(day9AM)
+		fmt.Println(day5PM)
+		fmt.Println(attempt)
+		fmt.Println(day1, month1, year1)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Doctors only work from 9 AM to 5 PM!"})
+		return
+	}
+
 	//4.to check for duplicate times AND time overlaps!!!-----
 	dup1 := attempt.Format("2006-01-02T15:04:05Z07:00")
 	dup2 := attempt2.Format("2006-01-02T15:04:05Z07:00")
@@ -104,7 +120,7 @@ func CreateAppointment(c *gin.Context) {
 		return
 	}
 
-	//--------------------------- end of BLOCK
+	//--------------------------- end of validation BLOCK
 
 	//finally, check if doc exist or if error in JSON sent
 	if err := models.DB.First(&doc).Error; err != nil {
@@ -118,8 +134,8 @@ func CreateAppointment(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"appointment booked": apptmt})
 
-	models.DB.Model(&doc).Association("Schedule").Append(apptmt) //!!!! THIS IS CAUSING AN ERROR.... BIG ERROR
-	models.DB.Model(&doc).Select("schedule").Updates(apptmt)
+	//models.DB.Model(&doc).Association("Schedule").Append(apptmt) //!!!! THIS IS CAUSING AN ERROR.... BIG ERROR
+	models.DB.Model(&doc).Select("Schedule").Updates(apptmt)
 
 }
 
@@ -140,7 +156,7 @@ func DeleteAppointment(c *gin.Context) {
 	}
 
 	var apptmt models.Appointment
-	if err := models.DB.Where("a_id = ?", aID).First(&apptmt).Error; err != nil {
+	if err := models.DB.Where("id = ?", aID).First(&apptmt).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
 		return
 	}
@@ -157,7 +173,8 @@ func DeleteAppointment(c *gin.Context) {
 
 	apptmt.Booked = false //THE WAY I DEFINE booked appointments is false bool!
 
-	models.DB.Save(&apptmt)
+	models.DB.Delete(&apptmt)
+	models.DB.Model(&doctor).Select("Schedule").Updates(apptmt)
 
 	c.JSON(http.StatusOK, gin.H{"cancelled": true})
 }
@@ -169,7 +186,7 @@ func FindAppointment(c *gin.Context) {
 	var doctor models.Doctor
 	var patient models.Patient
 
-	if err := models.DB.Where("a_id = ?", c.Param("id")).First(&app).Error; err != nil {
+	if err := models.DB.Where("id = ?", c.Param("id")).First(&app).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
 		return
 	}

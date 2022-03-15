@@ -1,7 +1,10 @@
 package models
 
+import "gorm.io/gorm"
+
 type Patient struct {
-	ID       uint          `gorm:"primarykey" json:"id,omitempty"`
+	gorm.Model
+	//ID       uint          `gorm:"primarykey" json:"id,omitempty"`
 	Name     string        `json:"name"`
 	Email    string        `json:"email"`
 	Password string        `json:"password,omitempty"`
