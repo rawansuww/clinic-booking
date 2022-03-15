@@ -7,14 +7,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/copier"
+	"github.com/rawansuww/clinic-booking/middleware"
+	"github.com/rawansuww/clinic-booking/models"
 	"golang.org/x/crypto/bcrypt"
 	_ "golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	_ "gorm.io/gorm"
-
-	//"github.com/rawansuww/clinic-booking/auth"
-	"github.com/rawansuww/clinic-booking/middleware"
-	"github.com/rawansuww/clinic-booking/models"
 )
 
 // Signup creates a user in db

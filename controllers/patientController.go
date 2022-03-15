@@ -33,7 +33,7 @@ type DoctorToPatient struct {
 
 // GET /patients
 // Find all patients
-func FindPatients(c *gin.Context) { //take the gin context... revise this
+func FindPatients(c *gin.Context) {
 	var patients []models.Patient
 	models.DB.Find(&patients)
 
@@ -79,13 +79,13 @@ func FindPatientHistory(c *gin.Context) {
 
 		for i := 0; i < len(patient.History); i++ {
 			take := patient.History[i].DID
-			fmt.Println(take)
 
 			models.DB.Raw("SELECT * FROM doctors WHERE id=?", take).First(&doc)
 			doctor := DoctorToPatient{doc.Name, doc.Email}
 			data := DoctorToPatientHist{patient.History[i], doctor}
 			if patient.History[i].StartTime.Before(time.Now()) { //making sure history is iN PAST
 				history = append(history, data)
+
 			}
 
 		}

@@ -13,7 +13,6 @@ import (
 )
 
 type BookSlot struct {
-	//AID       uint          `json:"aID" ` //autoincrement later
 	PID       string        `json:"pID"` //you will get the pID from JWT TOKEN later
 	DID       uint          `json:"dID"` //you will get the dID from URL param
 	Booked    bool          `json:"booked"`
@@ -21,12 +20,6 @@ type BookSlot struct {
 	EndTime   time.Time     `json:"endTime" binding:"required"`
 	Duration  time.Duration `json:"duration"`
 }
-
-///////ONLYYY the patient who booked the appointment is also able to see the appointment details
-
-////IMPORTANT::::::::::
-/// NEED TO RETURN ENTIRE PATIENT AND DOCTOR OF EACH APPOINTMENT, not just pID and dID!
-//need to also restrict and use JSON deserialization to show less info depending on the user type!!!
 
 func CreateAppointment(c *gin.Context) {
 	var input BookSlot
@@ -129,7 +122,7 @@ func CreateAppointment(c *gin.Context) {
 	}
 
 	// If all good, Create appointment
-	apptmt := models.Appointment{PID: patient.ID, DID: doc.ID, StartTime: input.StartTime, EndTime: input.EndTime, Booked: true, Duration: time.Duration(input.EndTime.Sub(input.StartTime).Minutes())}
+	apptmt := models.Appointment{PID: patient.ID, DID: doc.ID, StartTime: input.StartTime, EndTime: input.EndTime, Duration: time.Duration(input.EndTime.Sub(input.StartTime).Minutes())}
 	models.DB.Create(&apptmt)
 
 	c.JSON(http.StatusOK, gin.H{"appointment booked": apptmt})
@@ -170,8 +163,6 @@ func DeleteAppointment(c *gin.Context) {
 		}
 
 	}
-
-	apptmt.Booked = false //THE WAY I DEFINE booked appointments is false bool!
 
 	models.DB.Delete(&apptmt)
 	models.DB.Model(&doctor).Select("Schedule").Updates(apptmt)
@@ -216,6 +207,5 @@ func FindAppointment(c *gin.Context) {
 	}
 
 	models.DB.Preload("Schedule").Find(&app)
-	//models.DB.Preload("Availability").Find(&doc)
 
 }
