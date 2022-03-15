@@ -27,7 +27,7 @@ func main() {
 	registered.DELETE("/doctors/:id", controllers.DeleteDoctor)
 	registered.POST("/doctors/most/count", controllers.FindDoctorsMost)
 	registered.POST("/doctors/most/hours", controllers.FindDoctorsLongest)
-	registered.GET("/doctors/slots/all", controllers.FindDoctorAvailAll)
+	registered.POST("/doctors/slots/all", controllers.FindDoctorAvailAll)
 
 	//patients
 	registered.GET("/patients", controllers.FindPatients)
