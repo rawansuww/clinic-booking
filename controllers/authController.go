@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"log"
+	"regexp"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/copier"
@@ -38,19 +39,54 @@ func Signup(c *gin.Context) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(input.Password), 8)
 	if input.Role == "doctor" {
 		doc := models.Doctor{Name: input.Name, Email: input.Email, Password: string(hashed), Role: input.Role}
-		models.DB.Create(&doc)
+
+		m, err := regexp.MatchString("@cxunicorn.com", input.Email)
+		if err != nil {
+			fmt.Println("your regex is faulty")
+			// you should log it or throw an error
+
+		}
+		if !m {
+			c.JSON(400, "Your email should include @cxunicorn.com")
+			return
+		}
+
+		err2 := models.DB.Create(&doc)
+		if err2 != nil {
+			c.JSON(400, "Your email already exists in this system!")
+			return
+		}
 
 		c.JSON(200, doc)
 	}
 	if input.Role == "patient" {
 		patient := models.Patient{Name: input.Name, Email: input.Email, Password: string(hashed), Role: input.Role}
-		models.DB.Create(&patient)
+		err := models.DB.Create(&patient)
 
+		if err != nil {
+			c.JSON(400, "Your email already exists in this system!")
+			return
+		}
 		c.JSON(200, patient)
 	}
 	if input.Role == "admin" {
 		admin := models.Admin{Name: input.Name, Email: input.Email, Password: string(hashed), Role: input.Role}
-		models.DB.Create(&admin)
+		m, err := regexp.MatchString("@cxunicorn.com", input.Email)
+		if err != nil {
+			fmt.Println("your regex is faulty")
+			// you should log it or throw an error
+
+		}
+		if !m {
+			c.JSON(400, "Your email should include @cxunicorn.com")
+			return
+		}
+
+		err2 := models.DB.Create(&admin)
+		if err2 != nil {
+			c.JSON(400, "Your email already exists in this system!")
+			return
+		}
 
 		c.JSON(200, admin)
 	}
