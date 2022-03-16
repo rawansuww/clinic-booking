@@ -15,8 +15,6 @@ $ go run .
 | GET("/doctors/:id/schedule")                 | Returns list of appointments along with associated patient         | All, but patients cannot see any patient info  
 | POST("/doctors/:id/slots")                   | Takes a given day (UTC), returns string array of availabilities in a day for a requested doctor        | All, no restrictions  
 | POST("/doctors/:id/schedule")             | Book an appointment with a requested doctor, takes a given startTime and endTime     | Patients only  
-
-
 | PATCH("/doctors/:id")                    | Not required (part of CRUD)        | N/A  
 | DELETE("/doctors/:id" )                 | Not required (part of CRUD)         | Admins only  
 | POST("/doctors/most/count")                    | Takes a given day (UTC), returns sorted list of doctors with most appointments         | Admins only  
@@ -29,10 +27,9 @@ $ go run .
 | DELETE("/patients/:id             | Not required (part of CRUD)         | Admins only  
 | GET("/appointments/:id")             | Returns record of requested appointment         | All admins and only the doctor and only the patient who's booked   
 | DELETE("/appointments/:id")             | Deletes record of requested appointment         | All admins and only the doctor who's booked for the appointment  
-
-
 | POST("/public/signup")             | Takes name, email, password, role with unique email constraints and regex for admins and doctors       | N/A  
+| POST("/public/login")             | Takes email, password, role and returns JWT Token.       | N/A  
 
-| POST("/public/login")             | Takes email, password, role and returns JWT Token       | N/A  
 
+End of api endpoints
 
