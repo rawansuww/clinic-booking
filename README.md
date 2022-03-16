@@ -8,12 +8,12 @@ How to use:
 $ go run .
 ```
 
-| ENDPOINT                    | Requirement   | Access     |
-| -------------               | ------------- | -------- |
-| GET("/doctors")             | Returns list of all doctors in system         | All, but patients and doctors can only see name and email, while admins can see everything else  |
-| GET("/doctors/:id")                     | Returns record of requested doctor         | All, but patients and doctors can only see name and email, while admins can see everything else  |
+| ENDPOINT                                     | Requirement                 | Access     |
+| -------------                                | -------------               | -------- |
+| GET("/doctors")                              | Returns list of all doctors in system         | All, but patients and doctors can only see name and email, while admins can see everything else  |
+| GET("/doctors/:id")                          | Returns record of requested doctor         | All, but patients and doctors can only see name and email, while admins can see everything else  
 | GET("/doctors/:id/schedule")                 | Returns list of appointments along with associated patient         | All, but patients cannot see any patient info  
-| POST("/doctors/:id/slots")                     | Takes a given day (UTC), returns string array of availabilities in a day for a requested doctor        | All, no restrictions  |
+| POST("/doctors/:id/slots")                   | Takes a given day (UTC), returns string array of availabilities in a day for a requested doctor        | All, no restrictions  
 | POST("/doctors/:id/schedule")             | Book an appointment with a requested doctor, takes a given startTime and endTime     | Patients only  
 
 
