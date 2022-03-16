@@ -7,3 +7,8 @@ How to use:
 ```
 $ go run .
 ```
+
+| ENDPOINT                    | Requirement   | Access     |
+| -------------               | ------------- | -------- |
+| GET("/doctors")             | Test1         | NewYork  |
+| GET("/doctors/:id")                     | Test2         | Toronto  |
