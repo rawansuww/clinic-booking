@@ -24,7 +24,7 @@ $ go run .
 | POST("/doctors/slots/all")                     | Takes a given day (UTC), returns slots of all doctors on that day      | Admins and patients only  
 | GET("/patients")             | Returns list of all patients in system         | Admins only  
 | GET("/patients/:id")             | Returns record of requested patient in system         | Admins only  
-| GET("/patients/:id/history")             | Returns list of PAST appointments in system         | Admins and doctors, and only the patient who owns the history  
+| GET("/patients/:id/history")             | Returns list of PAST appointments for a requested patient         | All admins and doctors, and only the patient who owns the history  
 | PATCH("/patients/:id")             | Not required (part of CRUD)        | N/A  
 | DELETE("/patients/:id             | Not required (part of CRUD)         | Admins only  
 | GET("/appointments/:id")             | Returns record of requested appointment         | All admins and only the doctor and only the patient who's booked   
