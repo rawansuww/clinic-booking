@@ -34,10 +34,15 @@ type DoctorToPatient struct {
 // GET /patients
 // Find all patients
 func FindPatients(c *gin.Context) {
-	var patients []models.Patient
-	models.DB.Find(&patients)
+	role := c.GetString("role")
+	if role == "admin" {
+		var patients []models.Patient
+		models.DB.Find(&patients)
 
-	c.JSON(http.StatusOK, gin.H{"doctors": patients})
+		c.JSON(http.StatusOK, gin.H{"patients": patients})
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You need to be a clinic admin to see the list of patients!"})
+	}
 }
 
 // GET /patients/:id
@@ -45,12 +50,17 @@ func FindPatients(c *gin.Context) {
 func FindPatient(c *gin.Context) {
 	// Get model if exist
 	var doc models.Patient
-	if err := models.DB.Where("id = ?", c.Param("id")).First(&doc).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
-		return
-	}
+	role := c.GetString("role")
+	if role == "admin" {
+		if err := models.DB.Where("id = ?", c.Param("id")).First(&doc).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
+			return
+		}
 
-	c.JSON(http.StatusOK, gin.H{"doctor": doc})
+		c.JSON(http.StatusOK, gin.H{"patient": doc})
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You need to be a clinic admin to access patient information!"})
+	}
 }
 
 //GET Patient History
@@ -117,13 +127,20 @@ func UpdatePatient(c *gin.Context) {
 // DELETE /patients/:id
 // Delete a patient
 func DeletePatient(c *gin.Context) {
-	var patient models.Patient
-	if err := models.DB.Where("id = ?", c.Param("id")).First(&patient).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
-		return
+
+	role := c.GetString("role")
+
+	if role == "admin" {
+		var patient models.Patient
+		if err := models.DB.Where("id = ?", c.Param("id")).First(&patient).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Record not found!"})
+			return
+		}
+
+		models.DB.Delete(&patient)
+
+		c.JSON(http.StatusOK, gin.H{"deleted": true})
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You have to be a clinic admin to delete a patient record!"})
 	}
-
-	models.DB.Delete(&patient)
-
-	c.JSON(http.StatusOK, gin.H{"data": true})
 }
