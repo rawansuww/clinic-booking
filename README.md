@@ -1,6 +1,6 @@
 # Clinic Booking REST API using Gin and Gorm
 
-This is the code submission for Assessment #1 at CX using Golang, GinGonic and GORM.
+This is the code submission for Assessment #1 using Golang, GinGonic and GORM.
 
 How to use:
 
